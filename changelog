@@ -1,3 +1,9 @@
+version 5.0.7
+---------------------------
+* 2026-07-27 Added a public callback-based scalar input capture API for string, integer, float, and keyword prompts.
+* 2026-07-27 Added normalized completed, cancelled, and failed scalar results for external QAD integrations.
+
+
 version 5.0.6
 ---------------------------
 * 2026-07-08 Ported the working QGIS 4.01 / Qt6 compatibility baseline from the Open Spatial prototype archive.

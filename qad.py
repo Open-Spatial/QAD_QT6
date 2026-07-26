@@ -179,7 +179,7 @@ class Qad(QObject):
    # version
    # ============================================================================
    def version(self):
-      return "5.0.6" # aligned with metadata.txt [general] version
+      return "5.0.7" # aligned with metadata.txt [general] version
 
 
    def setLastPointAndSegmentAng(self, point, segmentAng = None):
@@ -1678,6 +1678,19 @@ class Qad(QObject):
          prompts = prompts,
          finish_on_point_count = finish_on_point_count,
          selection_steps = selection_steps,
+      )
+
+   def runScalarCapture(self, callback, *, prompt, input_type = "string", default = None, keywords = None, allow_null = False, allow_zero = True, allow_negative = True, allow_positive = True):
+      return self.QadCommands.runScalarCapture(
+         callback,
+         prompt = prompt,
+         input_type = input_type,
+         default = default,
+         keywords = keywords,
+         allow_null = allow_null,
+         allow_zero = allow_zero,
+         allow_negative = allow_negative,
+         allow_positive = allow_positive,
       )
 
    def continueCommandFromMapTool(self):

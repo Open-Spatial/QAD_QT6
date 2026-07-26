@@ -39,6 +39,7 @@ from .qad_variables import QadVariables
 from .qad_getpoint import *
 from .qad_utils import decriptPlainText, getQADPath, getMacAddress
 from .qad_geometry_capture import QadGeometryCaptureResult
+from .qad_scalar_capture import QadScalarCaptureCommand, QadScalarCaptureResult, scalar_input_mode
 from .cmd.qad_generic_cmd import QadCommandClass
 from .cmd.qad_id_cmd import QadIDCommandClass
 from .cmd.qad_setcurrlayerbygraph_cmd import QadSETCURRLAYERBYGRAPHCommandClass, QadSETCURRUPDATEABLELAYERBYGRAPHCommandClass
@@ -147,6 +148,8 @@ class QadCommandsClass():
       self.geometryCaptureCallback = None
       self.geometryCaptureCommandName = None
       self.geometryCaptureTargetWkbType = None
+      self.scalarCaptureCallback = None
+      self.scalarCaptureInputType = None
 
       # I discard aliases that have the same name as commands
       exceptionList = []
@@ -348,6 +351,72 @@ class QadCommandsClass():
          return False
 
 
+   def runScalarCapture(self, callback, *, prompt, input_type = "string", default = None, keywords = None, allow_null = False, allow_zero = True, allow_negative = True, allow_positive = True):
+      try:
+         if callback is None or callable(callback) == False:
+            return False
+         normalized_type = str(input_type or "").strip().lower()
+         supported_types = (
+            "string",
+            "integer",
+            "float",
+            "keyword",
+            "point",
+            "point_or_keyword",
+            "point_or_distance",
+            "point_or_angle_or_keyword",
+         )
+         if normalized_type not in supported_types:
+            callback(QadScalarCaptureResult(normalized_type, "failed", None, "Unsupported scalar input type."))
+            return False
+         clean_prompt = str(prompt or "")
+         if clean_prompt.strip() == "":
+            callback(QadScalarCaptureResult(normalized_type, "failed", None, "A scalar input prompt is required."))
+            return False
+         if self.actualCommand is not None:
+            callback(QadScalarCaptureResult(normalized_type, "failed", None, "Another QAD command is already active."))
+            return False
+
+         if keywords is None:
+            keyword_text = ""
+         elif isinstance(keywords, str):
+            keyword_text = keywords
+         else:
+            keyword_text = "/".join(str(value) for value in keywords)
+         keyword_types = ("keyword", "point_or_keyword", "point_or_angle_or_keyword")
+         if normalized_type in keyword_types and keyword_text.strip() == "":
+            callback(QadScalarCaptureResult(normalized_type, "failed", None, "Keyword input requires keywords."))
+            return False
+
+         input_mode = scalar_input_mode(
+            allow_null = bool(allow_null),
+            allow_zero = bool(allow_zero),
+            allow_negative = bool(allow_negative),
+            allow_positive = bool(allow_positive),
+         )
+         self.actualCommand = QadScalarCaptureCommand(
+            self.plugIn,
+            prompt = clean_prompt,
+            input_type = normalized_type,
+            default = default,
+            keywords = keyword_text,
+            input_mode = input_mode,
+            allow_null = bool(allow_null),
+         )
+         self.scalarCaptureCallback = callback
+         self.scalarCaptureInputType = normalized_type
+         self.usedCmdNames.setUsed("MUNSYSQ_SCALAR")
+         self.plugIn.clearEntityGripPoints()
+         if self.actualCommand.run() == True:
+            self.clearCommand()
+         return True
+
+      except Exception as e:
+         self.abortCommand("failed", str(e))
+         displayError(e)
+         return False
+
+
    # ============================================================================
    # runMacro
    # ============================================================================
@@ -435,6 +504,7 @@ class QadCommandsClass():
       # if there is no active command
       if self.actualCommand is None:
          self.emitGeometryCaptureResult(geometry_capture_status, geometry_capture_message)
+         self.emitScalarCaptureResult(geometry_capture_status, geometry_capture_message)
          self.showCommandPrompt() # displays standard prompt for command request
          self.plugIn.setStandardMapTool()
          self.plugIn.getCurrentMapTool()
@@ -451,6 +521,7 @@ class QadCommandsClass():
    def clearCommand(self, geometry_capture_status = "completed", geometry_capture_message = ""):
       if self.actualCommand is None:
          self.emitGeometryCaptureResult(geometry_capture_status, geometry_capture_message)
+         self.emitScalarCaptureResult(geometry_capture_status, geometry_capture_message)
          return
 
       # exception for virtual command "QadVirtualGripCommandsClass" which is not actually a command
@@ -466,6 +537,7 @@ class QadCommandsClass():
             qad_utils.deselectAll(self.plugIn.canvas.layers())
 
       self.emitGeometryCaptureResult(geometry_capture_status, geometry_capture_message, self.actualCommand)
+      self.emitScalarCaptureResult(geometry_capture_status, geometry_capture_message, self.actualCommand)
 
       del self.actualCommand
       self.actualCommand = None
@@ -505,6 +577,39 @@ class QadCommandsClass():
          final_status = "cancelled"
       try:
          callback(QadGeometryCaptureResult(command_name, final_status, geometries, final_message, selections))
+      except Exception:
+         pass
+
+   def emitScalarCaptureResult(self, status, message = "", command = None):
+      callback = self.scalarCaptureCallback
+      if callback is None:
+         return
+
+      self.scalarCaptureCallback = None
+      input_type = self.scalarCaptureInputType or ""
+      self.scalarCaptureInputType = None
+      value = None
+      final_status = status
+      final_message = message or ""
+      if final_status == "completed" and command is not None:
+         try:
+            get_error = getattr(command, "scalarCaptureError", None)
+            if callable(get_error):
+               final_message = str(get_error() or "")
+            if final_message:
+               final_status = "failed"
+            else:
+               get_value = getattr(command, "capturedScalarValue", None)
+               if callable(get_value):
+                  value = get_value()
+               if value is None and getattr(command, "allowNull", False) == False:
+                  final_status = "cancelled"
+         except Exception as ex:
+            final_status = "failed"
+            value = None
+            final_message = str(ex)
+      try:
+         callback(QadScalarCaptureResult(input_type, final_status, value, final_message))
       except Exception:
          pass
 
