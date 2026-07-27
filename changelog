@@ -1,3 +1,8 @@
+version 5.0.8
+---------------------------
+* 2026-07-27 Added optional initial-point seeding to the public geometry capture API for external PLINE workflows.
+
+
 version 5.0.7
 ---------------------------
 * 2026-07-27 Added a public callback-based scalar input capture API for string, integer, float, and keyword prompts.

@@ -179,7 +179,7 @@ class Qad(QObject):
    # version
    # ============================================================================
    def version(self):
-      return "5.0.7" # aligned with metadata.txt [general] version
+      return "5.0.8" # aligned with metadata.txt [general] version
 
 
    def setLastPointAndSegmentAng(self, point, segmentAng = None):
@@ -1670,7 +1670,7 @@ class Qad(QObject):
    def runMacro(self, args):
       self.QadCommands.runMacro(args)
 
-   def runGeometryCapture(self, command_name, callback, target_wkb_type = None, *, prompts = None, finish_on_point_count = None, selection_steps = None):
+   def runGeometryCapture(self, command_name, callback, target_wkb_type = None, *, prompts = None, finish_on_point_count = None, selection_steps = None, initial_point = None):
       return self.QadCommands.runGeometryCapture(
          command_name,
          callback,
@@ -1678,6 +1678,7 @@ class Qad(QObject):
          prompts = prompts,
          finish_on_point_count = finish_on_point_count,
          selection_steps = selection_steps,
+         initial_point = initial_point,
       )
 
    def runScalarCapture(self, callback, *, prompt, input_type = "string", default = None, keywords = None, allow_null = False, allow_zero = True, allow_negative = True, allow_positive = True):

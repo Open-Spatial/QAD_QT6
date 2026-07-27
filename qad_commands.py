@@ -309,7 +309,7 @@ class QadCommandsClass():
          self.abortCommand("failed", str(e))
          displayError(e)
 
-   def runGeometryCapture(self, command, callback, target_wkb_type = None, *, prompts = None, finish_on_point_count = None, selection_steps = None):
+   def runGeometryCapture(self, command, callback, target_wkb_type = None, *, prompts = None, finish_on_point_count = None, selection_steps = None, initial_point = None):
       try:
          if callback is None or callable(callback) == False:
             return False
@@ -342,6 +342,8 @@ class QadCommandsClass():
          self.usedCmdNames.setUsed(command)
          self.plugIn.clearEntityGripPoints()
          if self.actualCommand.run() == True:
+            self.clearCommand()
+         elif initial_point is not None and self.actualCommand.run(False, initial_point) == True:
             self.clearCommand()
          return True
 
