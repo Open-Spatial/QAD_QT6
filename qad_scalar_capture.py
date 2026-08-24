@@ -58,7 +58,22 @@ class QadScalarCaptureCommand(QadCommandClass):
          self.step = 1
          return False
 
-      value = self.defaultValue if msg is None else msg
+      # Point input arrives from the QAD map tool when the user clicks the
+      # canvas.  The command manager calls run(True) without passing that
+      # point as ``msg``; reading only ``msg`` therefore turned every map
+      # click into a null value and caused the scalar result to be reported
+      # as cancelled.
+      point_input_types = (
+         "point",
+         "point_or_keyword",
+         "point_or_distance",
+         "point_or_angle_or_keyword",
+      )
+      if msgMapTool and self.inputTypeName in point_input_types:
+         point_map_tool = self.getPointMapTool()
+         value = getattr(point_map_tool, "point", None)
+      else:
+         value = self.defaultValue if msg is None else msg
       try:
          if value is not None:
             if self.inputTypeName == "integer":
