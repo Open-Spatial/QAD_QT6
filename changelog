@@ -1,3 +1,9 @@
+version 5.0.10
+---------------------------
+* 2026-09-03 Fixed dynamic scalar input typing by forwarding ordinary editable key events to the dynamic input editor.
+* 2026-09-03 Fixed right-click Enter so callback-based scalar capture submits pending dynamic keywords and numeric values.
+
+
 version 5.0.9
 ---------------------------
 * 2026-08-24 Fixed map-tool point input for callback-based scalar capture so external point workflows receive the clicked canvas point.

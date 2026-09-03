@@ -769,7 +769,7 @@ class QadDynamicInputEdit(QadDynamicEdit):
       elif e.key() == Qt.Key_Escape:
          self.QadDynamicInputObj.abort()
 
-      elif e.text() != "":
+      else:
          previousTxt = self.toPlainText()
          QTextEdit.keyPressEvent(self, e)
          if self.lockable: # if it is possible to change the lock state
@@ -3415,47 +3415,61 @@ class QadDynamicEditInput(QadDynamicInput):
             self.show(True)
 
       elif e.key() == Qt.Key_Return or e.key == Qt.Key_Enter:
-         # if there is no value locked widget
-         if self.anyLockedValueEdit() == False:
-            msg = ""
-            # if @ or # was pressed
-            if self.edits[QadDynamicInputEditEnum.EDIT_SYMBOL_COORD_TYPE].isVisible():
-               coordType = self.edits[QadDynamicInputEditEnum.EDIT_SYMBOL_COORD_TYPE].toPlainText()
-               if "@" in coordType: msg = "@"
-               elif "#" in coordType: msg = "#"
-            self.showEvaluateMsg(msg)
-         else:
-            if self.currentEdit is not None:
-               currentWidget = self.edits[self.currentEdit]
-               # if the widget content has been modified by the user
-               if currentWidget.isLockedValue() == True:
-                  value = currentWidget.toPlainText()
-                  # check if it is an option of the active command
-                  keyWord = self.evaluateKeyWords(value)
-                  if keyWord is not None:
-                     self.showEvaluateMsg(keyWord)
-                  # otherwise if a point was expected and it is an osnap option
-                  elif (self.inputType & QadInputTypeEnum.POINT2D or self.inputType & QadInputTypeEnum.POINT3D) and \
-                        str2snapTypeEnum(value) != -1:
-                     currentWidget.showMsg("")
-                     currentWidget.setLockedValue(False)
-                     self.showEvaluateMsg(value)
-                  # otherwise if a point was expected and it is the M2P option "midpoint between 2 points"
-                  elif (self.inputType & QadInputTypeEnum.POINT2D or self.inputType & QadInputTypeEnum.POINT3D) and \
-                        (value.upper() == QadMsg.translate("Snap", "M2P") or value.upper() == "_M2P"):
-                     currentWidget.showMsg("")
-                     currentWidget.setLockedValue(False)
-                     self.showEvaluateMsg(value)
-                  # otherwise check the validity of the value
-                  else:
-                     if currentWidget.checkValid() is not None:
-                        msg = self.resStr if self.refreshResult() == True else "" # I recalculate the result and use it in string format
-                        self.showEvaluateMsg(msg)
-            else:
-               msg = self.resStr if self.refreshResult() == True else "" # I recalculate the result and use it in string format
-               self.showEvaluateMsg(msg)
+         self.submitCurrentInput()
       else:
          self.edits[self.currentEdit].keyPressEvent(e)
+
+
+   # ============================================================================
+   # submitCurrentInput
+   # ============================================================================
+   def submitCurrentInput(self):
+      """Evaluate dynamic input using the same semantics as pressing Enter."""
+      # if there is no value locked widget
+      if self.anyLockedValueEdit() == False:
+         msg = ""
+         # if @ or # was pressed
+         if self.edits[QadDynamicInputEditEnum.EDIT_SYMBOL_COORD_TYPE].isVisible():
+            coordType = self.edits[QadDynamicInputEditEnum.EDIT_SYMBOL_COORD_TYPE].toPlainText()
+            if "@" in coordType: msg = "@"
+            elif "#" in coordType: msg = "#"
+         self.showEvaluateMsg(msg)
+         return True
+
+      if self.currentEdit is not None:
+         currentWidget = self.edits[self.currentEdit]
+         # if the widget content has been modified by the user
+         if currentWidget.isLockedValue() == True:
+            value = currentWidget.toPlainText()
+            # check if it is an option of the active command
+            keyWord = self.evaluateKeyWords(value)
+            if keyWord is not None:
+               self.showEvaluateMsg(keyWord)
+               return True
+            # otherwise if a point was expected and it is an osnap option
+            elif (self.inputType & QadInputTypeEnum.POINT2D or self.inputType & QadInputTypeEnum.POINT3D) and \
+                  str2snapTypeEnum(value) != -1:
+               currentWidget.showMsg("")
+               currentWidget.setLockedValue(False)
+               self.showEvaluateMsg(value)
+               return True
+            # otherwise if a point was expected and it is the M2P option "midpoint between 2 points"
+            elif (self.inputType & QadInputTypeEnum.POINT2D or self.inputType & QadInputTypeEnum.POINT3D) and \
+                  (value.upper() == QadMsg.translate("Snap", "M2P") or value.upper() == "_M2P"):
+               currentWidget.showMsg("")
+               currentWidget.setLockedValue(False)
+               self.showEvaluateMsg(value)
+               return True
+            # otherwise check the validity of the value
+            elif currentWidget.checkValid() is not None:
+               msg = self.resStr if self.refreshResult() == True else "" # I recalculate the result and use it in string format
+               self.showEvaluateMsg(msg)
+               return True
+         return False
+
+      msg = self.resStr if self.refreshResult() == True else "" # I recalculate the result and use it in string format
+      self.showEvaluateMsg(msg)
+      return True
 
 
    # ============================================================================

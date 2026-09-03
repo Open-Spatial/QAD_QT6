@@ -179,7 +179,7 @@ class Qad(QObject):
    # version
    # ============================================================================
    def version(self):
-      return "5.0.9" # aligned with metadata.txt [general] version
+      return "5.0.10" # aligned with metadata.txt [general] version
 
 
    def setLastPointAndSegmentAng(self, point, segmentAng = None):
@@ -1820,6 +1820,21 @@ class Qad(QObject):
       return self.TextWindow.getCurrMsg()
 
    def showEvaluateMsg(self, msg = None):
+      # Right-click acts as Enter while a map tool is active. Prefer an
+      # explicitly typed command-line value, then submit any pending dynamic
+      # input through the same path used by the Return key.
+      if msg is None:
+         currentMsg = self.TextWindow.getCurrMsg()
+         if currentMsg is None or len(currentMsg) == 0:
+            mapTool = self.getCurrentMapTool()
+            if mapTool is not None:
+               getDynamicInput = getattr(mapTool, "getDynamicInput", None)
+               if callable(getDynamicInput):
+                  dynamicInput = getDynamicInput()
+                  submitCurrentInput = getattr(dynamicInput, "submitCurrentInput", None)
+                  if getattr(dynamicInput, "isVisible", False) and callable(submitCurrentInput):
+                     if submitCurrentInput():
+                        return
       self.TextWindow.showEvaluateMsg(msg)
 
 
