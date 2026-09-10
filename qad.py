@@ -179,7 +179,7 @@ class Qad(QObject):
    # version
    # ============================================================================
    def version(self):
-      return "5.0.10" # aligned with metadata.txt [general] version
+      return "5.0.11" # aligned with metadata.txt [general] version
 
 
    def setLastPointAndSegmentAng(self, point, segmentAng = None):

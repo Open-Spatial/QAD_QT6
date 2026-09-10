@@ -14,7 +14,7 @@ author=Open Spatial Pty Ltd
 qgisMinimumVersion=4.0
 description=Quantum Aided Design: cad like commands in QGIS
 about=Quantum Aided Design: cad like commands in QGIS
-version=5.0.10
+version=5.0.11
 tracker=https://github.com/Open-Spatial/QAD/issues
 repository=https://github.com/Open-Spatial/QAD
 

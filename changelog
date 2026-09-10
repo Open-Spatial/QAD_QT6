@@ -1,5 +1,6 @@
-version 5.0.10
+version 5.0.11
 ---------------------------
+* 2026-09-10 Fixed context-menu Enter to submit edited dynamic keywords and text through the same validated path as keyboard Enter.
 * 2026-09-03 Fixed dynamic scalar input typing by forwarding ordinary editable key events to the dynamic input editor.
 * 2026-09-03 Fixed right-click Enter so callback-based scalar capture submits pending dynamic keywords and numeric values.
 

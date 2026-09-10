@@ -676,6 +676,14 @@ class QadContextualMenuClass(QMenu):
             dynInput = pointMapTool.getDynamicInput()
             if dynInput is not None:
                if dynInput.anyLockedValueEdit() == True:
+                  submitCurrentInput = getattr(dynInput, "submitCurrentInput", None)
+                  if callable(submitCurrentInput):
+                     # Keep context-menu Enter consistent with keyboard Enter.
+                     # In particular, refreshResult() treats an edited point
+                     # coordinate as a point and therefore bypasses keywords
+                     # such as Justify and text values entered in that widget.
+                     submitCurrentInput()
+                     return
                   if dynInput.refreshResult() == True:
                      dynInput.showEvaluateMsg(dynInput.resStr)
                      return
