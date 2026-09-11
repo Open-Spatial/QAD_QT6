@@ -1,3 +1,8 @@
+version 5.0.12
+---------------------------
+* 2026-09-11 Fixed Munsys TEXT capture so tag text, height, and rotation use scalar input without map clicks being interpreted as coordinate-pair values.
+
+
 version 5.0.11
 ---------------------------
 * 2026-09-10 Fixed context-menu Enter to submit edited dynamic keywords and text through the same validated path as keyboard Enter.

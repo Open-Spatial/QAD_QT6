@@ -75,6 +75,7 @@ class QadTEXTCommandClass(QadCommandClass):
       self.labelFields = None
       self.labelFieldNamesNdx = 0
       self.labelFieldValues = []
+      self.scalarTextInputs = False
 
    def __del__(self):
       QadCommandClass.__del__(self)
@@ -149,7 +150,10 @@ class QadTEXTCommandClass(QadCommandClass):
       if self.labelFieldNamesNdx >= len(self.labelFields):
          return False
       field = self.labelFields[self.labelFieldNamesNdx]
-      prompt = QadMsg.translate("Command_TEXT", "Enter the value of attribute \"{0}\": ").format(field.name())
+      if self.scalarTextInputs and field.name().upper() == "TAG_VALUE":
+         prompt = QadMsg.translate("Command_TEXT", "Enter text value: ")
+      else:
+         prompt = QadMsg.translate("Command_TEXT", "Enter the value of attribute \"{0}\": ").format(field.name())
       if field.type() == QVariant.Double: # is preparing to wait for a double or null value
          self.waitForFloat(prompt, None, QadInputModeEnum.NONE)
       elif field.type() == QVariant.LongLong: # prepares to wait for a 64-bit long or null value
@@ -162,6 +166,22 @@ class QadTEXTCommandClass(QadCommandClass):
          self.waitForString(prompt, None, QadInputModeEnum.NONE)
 
       return True
+
+
+   @staticmethod
+   def _uses_munsys_text_contract(layer):
+      try:
+         names = {str(name).upper() for name in layer.fields().names()}
+      except Exception:
+         return False
+      return {
+         "NOTE_TYPE",
+         "TAG_X",
+         "TAG_Y",
+         "TAG_VALUE",
+         "TAG_SIZE",
+         "TAG_ANGLE",
+      }.issubset(names)
 
 
    def run(self, msgMapTool = False, msg = None):
@@ -179,6 +199,12 @@ class QadTEXTCommandClass(QadCommandClass):
          errMsg = errMsg + QadMsg.translate("QAD", "\nA textual layer is a vector punctual layer having a label and the symbol transparency no more than 10%.\n")
          self.showErr(errMsg)
          return True # end command
+
+      # Munsys annotation layers store height and rotation as scalar tag
+      # attributes. Keep QAD's point-based TEXT input for ordinary text
+      # layers, but do not let map clicks become coordinate-pair values for
+      # the Munsys contract.
+      self.scalarTextInputs = self._uses_munsys_text_contract(currLayer)
 
       if  len(QadDimStyles.getDimListByLayer(currLayer)) > 0:
          errMsg = QadMsg.translate("QAD", "\nThe current layer belongs to a dimension style.\n")
@@ -219,7 +245,10 @@ class QadTEXTCommandClass(QadCommandClass):
          sizeFldNames = qad_label.get_labelSizeFieldNames(currLayer)
          if len(sizeFldNames) == 1 and len(sizeFldNames[0]) > 0:
             # prepares to wait for the ladder
-            self.GetDistClass = QadGetDistClass(self.plugIn)
+            self.GetDistClass = QadGetDistClass(
+               self.plugIn,
+               allow_points = not self.scalarTextInputs,
+            )
             prompt = QadMsg.translate("Command_TEXT", "Specify the text height <{0}>: ")
             self.GetDistClass.msg = prompt.format(str(self.hText))
             self.GetDistClass.dist = self.hText
@@ -235,7 +264,10 @@ class QadTEXTCommandClass(QadCommandClass):
                if self.GetAngleClass is not None:
                   del self.GetAngleClass
                # prepares to wait for the rotation angle
-               self.GetAngleClass = QadGetAngleClass(self.plugIn)
+               self.GetAngleClass = QadGetAngleClass(
+                  self.plugIn,
+                  allow_points = not self.scalarTextInputs,
+               )
                prompt = QadMsg.translate("Command_TEXT", "Specify the text rotation <{0}>: ")
                self.GetAngleClass.msg = prompt.format(str(qad_utils.toDegrees(self.rot)))
                self.GetAngleClass.angle = self.rot
@@ -267,7 +299,10 @@ class QadTEXTCommandClass(QadCommandClass):
                   if self.GetAngleClass is not None:
                      del self.GetAngleClass
                   # prepares to wait for the rotation angle
-                  self.GetAngleClass = QadGetAngleClass(self.plugIn)
+                  self.GetAngleClass = QadGetAngleClass(
+                     self.plugIn,
+                     allow_points = not self.scalarTextInputs,
+                  )
                   prompt = QadMsg.translate("Command_TEXT", "Specify the text rotation <{0}>: ")
                   self.GetAngleClass.msg = prompt.format(str(qad_utils.toDegrees(self.rot)))
                   self.GetAngleClass.angle = self.rot

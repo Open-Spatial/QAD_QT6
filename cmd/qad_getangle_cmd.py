@@ -44,12 +44,13 @@ class QadGetAngleClass(QadCommandClass):
       """instantiates a new command of the same type"""
       return QadGetAngleClass(self.plugIn)
 
-   def __init__(self, plugIn):
+   def __init__(self, plugIn, *, allow_points = True):
       QadCommandClass.__init__(self, plugIn)
       self.entity = QadEntity()
       self.startPt = None
       self.msg = QadMsg.translate("QAD", "Specify angle: ")
       self.angle = None # in radianti
+      self.allowPoints = bool(allow_points)
       # I store last point because the point(s) indicated by this function must not
       # alterare lastpoint
       self.__prevLastPoint = self.plugIn.lastPoint
@@ -62,17 +63,26 @@ class QadGetAngleClass(QadCommandClass):
       # =========================================================================
       # POINT or ENTITY REQUEST
       if self.step == 0: # start of command
-         if self.startPt is not None:
+         if self.allowPoints and self.startPt is not None:
             # set the map tool
             self.getPointMapTool().setDrawMode(QadGetPointDrawModeEnum.ELASTIC_LINE)
             self.getPointMapTool().setStartPoint(self.startPt)
 
          # is preparing to wait for a point or a real number
          # msg, inputType, default, keyWords, non-null values
-         self.waitFor(self.msg, \
-                      QadInputTypeEnum.POINT2D | QadInputTypeEnum.ANGLE, \
-                      self.angle, "", \
-                      QadInputModeEnum.NOT_NULL)
+         inputType = QadInputTypeEnum.POINT2D | QadInputTypeEnum.ANGLE \
+            if self.allowPoints else QadInputTypeEnum.ANGLE
+         if self.allowPoints:
+            self.waitFor(self.msg, \
+                         inputType, \
+                         self.angle, "", \
+                         QadInputModeEnum.NOT_NULL)
+         else:
+            self.plugIn.setStandardMapTool()
+            self.showInputMsg(self.msg, \
+                              inputType, \
+                              self.angle, "", \
+                              QadInputModeEnum.NOT_NULL)
 
          self.step = 1
          return False
@@ -103,6 +113,8 @@ class QadGetAngleClass(QadCommandClass):
             self.angle = qad_utils.toRadians(value)
             return True # end command
          elif type(value) == QgsPointXY:
+            if not self.allowPoints:
+               return True
             # the point(s) indicated by this function must not alter lastpoint
             self.plugIn.setLastPoint(self.__prevLastPoint)
 

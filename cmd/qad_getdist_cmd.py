@@ -44,12 +44,13 @@ class QadGetDistClass(QadCommandClass):
       """instantiates a new command of the same type"""
       return QadGetDistClass(self.plugIn)
 
-   def __init__(self, plugIn):
+   def __init__(self, plugIn, *, allow_points = True):
       QadCommandClass.__init__(self, plugIn)
       self.entity = QadEntity()
       self.startPt = None
       self.msg = QadMsg.translate("QAD", "Specify the distance: ")
       self.dist = None
+      self.allowPoints = bool(allow_points)
       self.inputMode = QadInputModeEnum.NOT_ZERO | QadInputModeEnum.NOT_NEGATIVE
       self.ctrlKey = False
 
@@ -67,12 +68,21 @@ class QadGetDistClass(QadCommandClass):
       if self.step == 0: # start of command
          # is preparing to wait for a point or a real number
          # msg, inputType, default, keyWords, positive values
-         self.waitFor(self.msg, \
-                      QadInputTypeEnum.POINT2D | QadInputTypeEnum.FLOAT, \
-                      self.dist, "", \
-                      QadInputModeEnum.NOT_NULL | self.inputMode)
+         inputType = QadInputTypeEnum.POINT2D | QadInputTypeEnum.FLOAT \
+            if self.allowPoints else QadInputTypeEnum.FLOAT
+         if self.allowPoints:
+            self.waitFor(self.msg, \
+                         inputType, \
+                         self.dist, "", \
+                         QadInputModeEnum.NOT_NULL | self.inputMode)
+         else:
+            self.plugIn.setStandardMapTool()
+            self.showInputMsg(self.msg, \
+                              inputType, \
+                              self.dist, "", \
+                              QadInputModeEnum.NOT_NULL | self.inputMode)
 
-         if self.startPt is not None:
+         if self.allowPoints and self.startPt is not None:
             # set the map tool
             self.getPointMapTool().setDrawMode(QadGetPointDrawModeEnum.ELASTIC_LINE)
             self.getPointMapTool().setStartPoint(self.startPt)
@@ -107,6 +117,8 @@ class QadGetDistClass(QadCommandClass):
             self.dist = value
             return True # end command
          elif type(value) == QgsPointXY:
+            if not self.allowPoints:
+               return True
             # the point(s) indicated by this function must not alter lastpoint
             self.plugIn.setLastPoint(self.__prevLastPoint)
 
